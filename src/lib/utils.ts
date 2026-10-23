@@ -40,7 +40,7 @@ export function firstUrl(urls: string[]): string | null {
 
 // --- Version comparison ---
 
-export const CURRENT_VERSION = '1.0.13'
+export const CURRENT_VERSION = '1.0.14'
 
 export function isNewerVersion(remote: string, local: string = CURRENT_VERSION): boolean {
   const r = remote.split('.').map(Number)
