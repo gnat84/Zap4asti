@@ -1,0 +1,44 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# SSL certificates
+cert.pem
+key.pem
+*.pem
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Build artifacts & Android APKs
+*.apk
+*.aab
+
+# Temp files
+.mimocode
+npm
+_dream_tmp.py
+*.csv
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

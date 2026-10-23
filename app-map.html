@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Карта приложения «Учёт запчастей»</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface2: #334155;
+    --border: #475569;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --blue: #3b82f6;
+    --green: #22c55e;
+    --purple: #a855f7;
+    --orange: #f97316;
+    --red: #ef4444;
+    --cyan: #06b6d4;
+    --yellow: #eab308;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+
+  header {
+    text-align: center;
+    padding: 3rem 2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+  header h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.5rem;
+  }
+  header p { color: var(--text-dim); font-size: 1.05rem; }
+
+  .nav {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 1rem 2rem;
+    background: var(--surface);
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    position: sticky;
+    top: 1rem;
+    z-index: 100;
+    border: 1px solid var(--border);
+  }
+  .nav a {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .nav a:hover { background: var(--surface2); color: var(--text); }
+
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+  .section h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .section h2 .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .section .subtitle {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .mermaid {
+    background: var(--bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+  @media (max-width: 900px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+  .card h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .card ul { list-style: none; padding: 0; }
+  .card li {
+    padding: 0.3rem 0;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--surface2);
+  }
+  .card li:last-child { border-bottom: none; }
+  .card li strong { color: var(--text); font-weight: 500; }
+
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .badge-blue { background: rgba(59,130,246,0.15); color: var(--blue); }
+  .badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
+  .badge-purple { background: rgba(168,85,247,0.15); color: var(--purple); }
+  .badge-orange { background: rgba(249,115,22,0.15); color: var(--orange); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+  .badge-cyan { background: rgba(6,182,212,0.15); color: var(--cyan); }
+
+  .file-tree {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.82rem;
+    line-height: 1.8;
+  }
+  .file-tree .dir { color: var(--blue); font-weight: 600; }
+  .file-tree .file { color: var(--text-dim); }
+  .file-tree .file-main { color: var(--green); font-weight: 500; }
+  .file-tree .file-config { color: var(--orange); }
+  .file-tree .file-sql { color: var(--purple); }
+  .file-tree .indent { padding-left: 1.5rem; }
+  .file-tree .indent2 { padding-left: 3rem; }
+  .file-tree .indent3 { padding-left: 4.5rem; }
+
+  .port-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  .port-table th {
+    text-align: left;
+    padding: 0.6rem 1rem;
+    background: var(--bg);
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+  }
+  .port-table td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--surface2);
+    color: var(--text-dim);
+  }
+  .port-table tr:hover td { background: rgba(59,130,246,0.05); }
+  .port-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: var(--cyan);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Карта приложения «Учёт запчастей»</h1>
+  <p>Архитектура, маршруты, компоненты, база данных, потоки данных</p>
+</header>
+
+<div class="container">
+
+<nav class="nav">
+  <a href="#architecture">Архитектура</a>
+  <a href="#routing">Маршруты</a>
+  <a href="#components">Компоненты</a>
+  <a href="#database">База данных</a>
+  <a href="#dataflow">Потоки данных</a>
+  <a href="#auth">Аутентификация</a>
+  <a href="#storage">Хранилище</a>
+  <a href="#ports">Порты и сеть</a>
+  <a href="#files">Структура файлов</a>
+</nav>
+
+<!-- ======================== АРХИТЕКТУРА ======================== -->
+<section class="section" id="architecture">
+  <h2><span class="dot" style="background:var(--blue)"></span> Архитектура системы</h2>
+  <p class="subtitle">Общая схема: клиент → Supabase (PostgreSQL + Auth + Storage)</p>
+  <div class="mermaid">
+graph TB
+    subgraph CLIENT["КЛИЕНТ"]
+        direction TB
+        B["Браузер (PWA)<br/>React + TypeScript + Vite"]
+        A["Android (Capacitor)<br/>Тот же код, обёртка WebView"]
+    end
+
+    subgraph SUPABASE["SUPABASE (BaaS)"]
+        direction TB
+        K["Kong API Gateway<br/>:8000"]
+        AUTH["GoTrue<br/>Аутентификация"]
+        REST["PostgREST<br/>REST API → PostgreSQL"]
+        STORAGE["Storage API<br/>Загрузка файлов"]
+        RT["Realtime<br/>WebSocket подписки"]
+        STUDIO["Supabase Studio<br/>Панель управления :3000"]
+        PG[("PostgreSQL<br/>База данных :5432")]
+    end
+
+    B -->|"HTTPS REST API"| K
+    A -->|"HTTPS REST API"| K
+    K --> AUTH
+    K --> REST
+    K --> STORAGE
+    K --> RT
+    REST --> PG
+    AUTH --> PG
+    STORAGE -->|"Файлы"| FS[("Файловая система<br/>olumes/storage")]
+    STUDIO -->|"Админ"| PG
+
+    classDef client fill:#1e40af,stroke:#3b82f6,stroke-width:2px,color:#fff
+    classDef supabase fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#fff
+    classDef db fill:#7c3aed,stroke:#a855f7,stroke-width:2px,color:#fff
+    classDef storage fill:#c2410c,stroke:#f97316,stroke-width:2px,color:#fff
+
+    class B,A client
+    class K,AUTH,REST,RT,STUDIO supabase
+    class PG db
+    class FS storage
+  </div>
+</section>
+
+<!-- ======================== МАРШРУТЫ ======================== -->
+<section class="section" id="routing">
+  <h2><span class="dot" style="background:var(--green)"></span> Маршруты (React Router)</h2>
+  <p class="subtitle">HashRouter — все URL начинаются с #</p>
+  <div class="mermaid">
+flowchart LR
+    LOGIN["#/login<br/>Страница входа"]
+    ROOT["#/  <br/>Главная — список цехов"]
+    WS["#/workshop/:id<br/>Цех — список линий"]
+    LINE["#/line/:id<br/>Линия — список запчастей"]
+    PART["#/part/:id<br/>Детали запчасти"]
+    ADMIN["#/admin<br/>Управление пользователями"]
+
+    LOGIN -->|"signIn()"| ROOT
+    ROOT -->|"Клик по цеху"| WS
+    WS -->|"Клик по линии"| LINE
+    LINE -->|"Клик по запчасти"| PART
+    ROOT -->|"Admin иконка"| ADMIN
+    WS -->|"Admin иконка"| ADMIN
+
+    classDef login fill:#dc2626,stroke:#ef4444,stroke-width:2px,color:#fff
+    classDef protected fill:#1d4ed8,stroke:#3b82f6,stroke-width:2px,color:#fff
+    classDef admin fill:#7c3aed,stroke:#a855f7,stroke-width:2px,color:#fff
+
+    class LOGIN login
+    class ROOT,WS,LINE,PART protected
+    class ADMIN admin
+  </div>
+</section>
+
+<!-- ======================== КОМПОНЕНТЫ ======================== -->
+<section class="section" id="components">
+  <h2><span class="dot" style="background:var(--purple)"></span> Иерархия компонентов</h2>
+  <p class="subtitle">Структура React-компонентов и их зависимости</p>
+  <div class="mermaid">
+graph TB
+    APP["App.tsx<br/><span class='badge badge-blue'>HashRouter</span>"]
+
+    subgraph AUTH_PAGE["Аутентификация"]
+        LOGIN_PAGE["LoginPage"]
+    end
+
+    subgraph LAYOUT["Layout (защищённый)"]
+        HEADER["Header + Sidebar"]
+        OUTLET["Outlet (контент)"]
+    end
+
+    subgraph PAGES["Страницы"]
+        DASH["DashboardPage<br/>Список цехов"]
+        WSPAGE["WorkshopPage<br/>Цех → Линии"]
+        LINEPAGE["LinePage<br/>Линия → Запчасти"]
+        PARTPAGE["PartDetailPage<br/>Детали запчасти"]
+        ADMINPAGE["AdminPage<br/>Пользователи"]
+    end
+
+    subgraph COMPONENTS["Компоненты"]
+        SIDEBAR["Sidebar<br/>Навигация + версии"]
+        WFORM["WorkshopForm<br/>Создание/ред. цеха"]
+        LFORM["LineForm<br/>Создание/ред. линии"]
+        LCARD["LineCard<br/>Карточка линии"]
+        PFORM["PartForm<br/>Создание/ред. запчасти"]
+        PTABLE["PartTable<br/>Таблица запчастей"]
+        IMGVIEW["ImageViewer<br/>Просмотр фото"]
+        BC["Breadcrumb<br/>Хлебные крошки"]
+        VERUP["VersionUploadModal<br/>Загрузка APK"]
+        VERBAN["VersionUpdateBanner<br/>Уведомление об обновлении"]
+        ERRBOUND["ErrorBoundary"]
+    end
+
+    subgraph HOOKS["Хуки"]
+        USEAUTH["useAuth()<br/>signIn/signOut/user/isAdmin"]
+    end
+
+    subgraph LIB["Библиотеки"]
+        SUPABASE["supabase.ts<br/>createClient()"]
+        ADMINAPI["adminApi.ts<br/>createUser/delete/reset"]
+        UTILS["utils.ts"]
+    end
+
+    APP --> LOGIN_PAGE
+    APP --> LAYOUT
+    LAYOUT --> HEADER
+    LAYOUT --> OUTLET
+    HEADER --> SIDEBAR
+    SIDEBAR --> WFORM
+    SIDEBAR --> VERUP
+    SIDEBAR --> VERBAN
+
+    OUTLET --> DASH
+    OUTLET --> WSPAGE
+    OUTLET --> LINEPAGE
+    OUTLET --> PARTPAGE
+    OUTLET --> ADMINPAGE
+
+    DASH --> WFORM
+    WSPAGE --> LFORM
+    WSPAGE --> WFORM
+    LINEPAGE --> LFORM
+    LINEPAGE --> PFORM
+    LINEPAGE --> PTABLE
+    LINEPAGE --> LCARD
+    PARTPAGE --> PFORM
+    PARTPAGE --> IMGVIEW
+    PARTPAGE --> BC
+    ADMINPAGE --> ADMINAPI
+
+    PFORM -.->|"upload"| SUPABASE
+    LFORM -.->|"upload"| SUPABASE
+    USEAUTH -.-> SUPABASE
+    ADMINAPI -.-> SUPABASE
+
+    classDef page fill:#1e40af,stroke:#3b82f6,color:#fff
+    classDef comp fill:#065f46,stroke:#10b981,color:#fff
+    classDef hook fill:#7c3aed,stroke:#a855f7,color:#fff
+    classDef lib fill:#92400e,stroke:#f59e0b,color:#fff
+
+    class LOGIN_PAGE,DASH,WSPAGE,LINEPAGE,PARTPAGE,ADMINPAGE page
+    class SIDEBAR,WFORM,LFORM,LCARD,PFORM,PTABLE,IMGVIEW,BC,VERUP,VERBAN,ERRBOUND comp
+    class USEAUTH hook
+    class SUPABASE,ADMINAPI,UTILS lib
+  </div>
+</section>
+
+<!-- ======================== БАЗА ДАННЫХ ======================== -->
+<section class="section" id="database">
+  <h2><span class="dot" style="background:var(--purple)"></span> Схема базы данных (ER)</h2>
+  <p class="subtitle">PostgreSQL через Supabase — таблицы, связи, триггеры</p>
+  <div class="mermaid">
+erDiagram
+    auth_users["auth.users"] {
+        uuid id PK
+        text email
+        timestamp created_at
+        timestamp email_confirmed_at
+        text encrypted_password
+    }
+
+    profiles {
+        uuid id PK,FK "→ auth.users"
+        text email
+        text role "admin | user"
+        timestamp created_at
+    }
+
+    workshops {
+        uuid id PK
+        text name
+        timestamp created_at
+    }
+
+    lines {
+        uuid id PK
+        text name
+        uuid workshop_id FK "→ workshops"
+        text inventory_number
+        text photo_url
+        jsonb photo_urls
+        text file_url
+        jsonb file_urls
+        text manufacturer_label
+        text manufacturer_photo_url
+        text created_by
+        text updated_by
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    parts {
+        uuid id PK
+        text name
+        text description
+        text photo_url
+        jsonb photo_urls
+        text file_url
+        jsonb file_urls
+        text link
+        boolean in_stock
+        text inventory_number
+        text storage_location
+        text scheme_name
+        uuid workshop_id FK "→ workshops"
+        uuid line_id FK "→ lines"
+        text created_by
+        text updated_by
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    app_versions {
+        uuid id PK
+        text version
+        text file_url
+        text created_by
+        timestamp created_at
+    }
+
+    auth_users ||--|| profiles : "id = id"
+    workshops ||--o{ lines : "workshop_id"
+    workshops ||--o{ parts : "workshop_id"
+    lines ||--o{ parts : "line_id"
+  </div>
+
+  <div class="grid-3" style="margin-top:1.5rem">
+    <div class="card">
+      <h3><span class="badge badge-green">TRIGGER</span> on_auth_user_created</h3>
+      <ul>
+        <li>Срабатывает: <strong>AFTER INSERT ON auth.users</strong></li>
+        <li>Действие: создаёт запись в <strong>profiles</strong> с ролью <code>user</code></li>
+        <li>SECURITY DEFINER — выполняется от имени владельца функции</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="badge badge-purple">FUNCTION</span> confirm_user_email()</h3>
+      <ul>
+        <li>Аргумент: <code>user_email TEXT</code></li>
+        <li>Обновляет <code>email_confirmed_at</code> в <strong>auth.users</strong></li>
+        <li>Вызывается администратором при создании пользователя</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="badge badge-red">FUNCTION</span> delete_user_by_admin()</h3>
+      <ul>
+        <li>Аргумент: <code>target_user_id UUID</code></li>
+        <li>Удаляет из: profiles → refresh_tokens → identities → auth.users</li>
+        <li>Проверяет роль <code>admin</code> вызывающего</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ======================== ПОТОКИ ДАННЫХ ======================== -->
+<section class="section" id="dataflow">
+  <h2><span class="dot" style="background:var(--orange)"></span> Потоки данных</h2>
+  <p class="subtitle">Как данные перемещаются между клиентом и Supabase</p>
+
+  <div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor U as Пользователь
+    participant B as Браузер<br/>(React App)
+    participant S as Supabase<br/>(Kong → PostgREST)
+    participant PG as PostgreSQL
+    participant ST as Storage
+
+    Note over U,ST: ЗАГРУЗКА ДАННЫХ
+    U->>B: Открывает приложение
+    B->>S: getSession() — проверка сессии
+    S->>PG: SELECT * FROM auth.users
+    PG-->>S: данные сессии
+    S-->>B: session + user
+    B->>S: .from('profiles').select('role')
+    S->>PG: SELECT role FROM profiles
+    PG-->>S: role = 'admin'
+    S-->>B: { role: 'admin' }
+    B->>S: .from('workshops').select('*')
+    S->>PG: SELECT * FROM workshops
+    PG-->>S: workshops[]
+    S-->>B: workshops[]
+    B-->>U: Отображает список цехов
+
+    Note over U,ST: СОЗДАНИЕ ЗАПЧАСТИ С ФОТО
+    U->>B: Заполняет форму, выбирает фото
+    B->>ST: storage.from('parts-files').upload(path, file)
+    ST-->>B: publicUrl
+    B->>S: .from('parts').insert({ ..., photo_url })
+    S->>PG: INSERT INTO parts
+    PG-->>S: OK
+    S-->>B: success
+    B-->>U: Запчасть создана
+
+    Note over U,ST: ПОИСК ЗАПЧАСТЕЙ
+    U->>B: Вводит запрос "подшипник"
+    B->>S: .from('parts').select('*, workshops(name), lines(name)').or('name.ilike.%подшипник%')
+    S->>PG: SELECT ... ILIKE '%подшипник%'
+    PG-->>S: parts[]
+    S-->>B: parts[] с именами цехов и линий
+    B-->>U: Результаты поиска
+  </div>
+
+  <div class="grid-2" style="margin-top:1.5rem">
+    <div class="card">
+      <h3><span class="badge badge-blue">READ</span> Операции чтения</h3>
+      <ul>
+        <li><strong>workshops</strong> — список всех цехов (Dashboard, Sidebar)</li>
+        <li><strong>lines</strong> — линии конкретного цеха (WorkshopPage)</li>
+        <li><strong>parts</strong> — запчасти конкретной линии (LinePage)</li>
+        <li><strong>parts</strong> — поиск по name/description (Layout)</li>
+        <li><strong>profiles</strong> — список пользователей (AdminPage)</li>
+        <li><strong>app_versions</strong> — последняя версия APK (Sidebar)</li>
+        <li><strong>auth.getSession()</strong> — текущая сессия (useAuth)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="badge badge-orange">WRITE</span> Операции записи</h3>
+      <ul>
+        <li><strong>INSERT</strong> — создание цехов, линий, запчастей, пользователей</li>
+        <li><strong>UPDATE</strong> — редактирование цехов, линий, запчастей, ролей</li>
+        <li><strong>DELETE</strong> — удаление цехов, линий, запчастей (admin)</li>
+        <li><strong>storage.upload</strong> — загрузка фото, файлов, APK</li>
+        <li><strong>rpc()</strong> — confirm_email, delete_user, reset_password</li>
+        <li><strong>auth.signUp</strong> — создание пользователя (adminApi)</li>
+        <li><strong>auth.updateUser</strong> — смена пароля</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ======================== АУТЕНТИФИКАЦИЯ ======================== -->
+<section class="section" id="auth">
+  <h2><span class="dot" style="background:var(--red)"></span> Процесс аутентификации</h2>
+  <p class="subtitle">Вход, регистрация, управление ролями</p>
+  <div class="mermaid">
+flowchart TB
+    START["Пользователь открывает приложение"]
+    GET_SESSION["supabase.auth.getSession()"]
+    HAS_SESSION{"Есть сессия?"}
+
+    SIGNIN_PAGE["LoginPage<br/>Email + Пароль"]
+    SIGNIN["supabase.auth.signInWithPassword()"]
+    SIGNIN_OK{"Успешно?"}
+    FETCH_ROLE["fetchUserRole()<br/>profiles.role"]
+    IS_ADMIN{"role == 'admin'?"}
+    SET_ADMIN["user.isAdmin = true<br/>Доступ к admin-функциям"]
+    SET_USER["user.isAdmin = false<br/>Только чтение"]
+    REDIRECT["navigate('/')"]
+
+    DASHBOARD["DashboardPage<br/>Список цехов"]
+
+    SIGNUP["AdminPage → createUser()<br/>POST /auth/v1/signup"]
+    AUTO_PROFILE["Триггер on_auth_user_created<br/>→ profiles.role = 'user'"]
+    CONFIRM["rpc('confirm_user_email')<br/>Подтверждение email"]
+    TOGGLE_ROLE["profiles.role toggle<br/>admin ↔ user"]
+    RESET_PASS["rpc('reset_user_password')<br/>Смена пароля админом"]
+    DELETE_USER["rpc('delete_user_by_admin')<br/>Удаление пользователя"]
+
+    START --> GET_SESSION --> HAS_SESSION
+    HAS_SESSION -->|"Нет"| SIGNIN_PAGE
+    HAS_SESSION -->|"Да"| FETCH_ROLE
+    SIGNIN_PAGE --> SIGNIN --> SIGNIN_OK
+    SIGNIN_OK -->|"Ошибка"| SIGNIN_PAGE
+    SIGNIN_OK -->|"OK"| FETCH_ROLE
+    FETCH_ROLE --> IS_ADMIN
+    IS_ADMIN -->|"Да"| SET_ADMIN
+    IS_ADMIN -->|"Нет"| SET_USER
+    SET_ADMIN --> REDIRECT --> DASHBOARD
+    SET_USER --> REDIRECT
+
+    DASHBOARD -.->|"admin"| TOGGLE_ROLE
+    DASHBOARD -.->|"admin"| RESET_PASS
+    DASHBOARD -.->|"admin"| DELETE_USER
+    DASHBOARD -.->|"admin"| SIGNUP
+    SIGNUP --> AUTO_PROFILE --> CONFIRM
+
+    classDef start fill:#1e40af,stroke:#3b82f6,color:#fff
+    classDef decision fill:#92400e,stroke:#f59e0b,color:#fff
+    classDef action fill:#065f46,stroke:#10b981,color:#fff
+    classDef error fill:#991b1b,stroke:#ef4444,color:#fff
+    classDef admin fill:#581c87,stroke:#a855f7,color:#fff
+
+    class START start
+    class HAS_SESSION,SIGNIN_OK,IS_ADMIN decision
+    class GET_SESSION,SIGNIN,FETCH_ROLE,SET_ADMIN,SET_USER,REDIRECT,AUTO_PROFILE,CONFIRM action
+    class SIGNIN_PAGE error
+    class SIGNUP,TOGGLE_ROLE,RESET_PASS,DELETE_USER admin
+  </div>
+</section>
+
+<!-- ======================== ХРАНИЛИЩЕ ======================== -->
+<section class="section" id="storage">
+  <h2><span class="dot" style="background:var(--orange)"></span> Хранилище файлов (Supabase Storage)</h2>
+  <p class="subtitle">Бакеты, структура путей, политики доступа</p>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3><span class="badge badge-orange">BUCKET</span> parts-files <span class="badge badge-green">Public</span></h3>
+      <ul>
+        <li><strong>photos/</strong> — фото запчастей (image/*)</li>
+        <li><strong>files/</strong> — PDF, документы, схемы</li>
+        <li><strong>lines/</strong> — фото линий, шильды производителя</li>
+        <li><strong>versions/</strong> — APK-файлы (обновления приложения)</li>
+      </ul>
+      <div style="margin-top:0.75rem; font-size:0.8rem; color:var(--text-dim)">
+        <p><span class="badge badge-blue">INSERT</span> authenticated — загрузка файлов</p>
+        <p style="margin-top:0.25rem"><span class="badge badge-green">SELECT</span> public — чтение файлов</p>
+        <p style="margin-top:0.25rem"><span class="badge badge-red">DELETE</span> authenticated — удаление файлов</p>
+      </div>
+    </div>
+    <div class="card">
+      <h3><span class="badge badge-orange">BUCKET</span> app-uploads <span class="badge badge-green">Public</span></h3>
+      <ul>
+        <li><strong>versions/</strong> — APK-файлы для обновления Android-приложения</li>
+      </ul>
+      <div style="margin-top:0.75rem; font-size:0.8rem; color:var(--text-dim)">
+        <p>Используется компонентом <strong>VersionUploadModal</strong></p>
+        <p style="margin-top:0.25rem">URL-шаблон: <code>versions/{version}_{timestamp}.apk</code></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="mermaid" style="margin-top:1.5rem">
+graph LR
+    subgraph BUCKETS["Supabase Storage"]
+        B1["parts-files<br/>(Public)"]
+        B2["app-uploads<br/>(Public)"]
+    end
+
+    subgraph PATHS["Структура путей"]
+        P1["photos/{timestamp}_{random}.jpg"]
+        P2["files/{timestamp}_{random}.pdf"]
+        P3["lines/{timestamp}.png"]
+        P4["versions/{version}_{timestamp}.apk"]
+    end
+
+    subgraph CLIENTS["Клиенты"]
+        C1["PartForm<br/>Фото запчастей"]
+        C2["PartForm<br/>Файлы запчастей"]
+        C3["LineForm<br/>Фото линий"]
+        C4["VersionUploadModal<br/>APK-файлы"]
+    end
+
+    C1 -->|"upload()"| B1
+    C2 -->|"upload()"| B1
+    C3 -->|"upload()"| B1
+    C4 -->|"upload()"| B2
+
+    B1 --> P1
+    B1 --> P2
+    B1 --> P3
+    B2 --> P4
+
+    classDef bucket fill:#c2410c,stroke:#f97316,color:#fff
+    classDef path fill:#1e3a5f,stroke:#3b82f6,color:#fff
+    classDef client fill:#065f46,stroke:#10b981,color:#fff
+
+    class B1,B2 bucket
+    class P1,P2,P3,P4 path
+    class C1,C2,C3,C4 client
+  </div>
+</section>
+
+<!-- ======================== ПОРТЫ ======================== -->
+<section class="section" id="ports">
+  <h2><span class="dot" style="background:var(--cyan)"></span> Порты и сетевые настройки</h2>
+  <p class="subtitle">Какие порты используются при локальном развёртывании Supabase</p>
+
+  <table class="port-table">
+    <thead>
+      <tr>
+        <th>Порт</th>
+        <th>Протокол</th>
+        <th>Сервис</th>
+        <th>Назначение</th>
+        <th>Важность</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="port-num">8000</span></td>
+        <td>TCP</td>
+        <td>Kong API Gateway</td>
+        <td>Основной API — все запросы фронтенда (Auth, REST, Storage)</td>
+        <td><span class="badge badge-red">КРИТИЧЕСКИЙ</span></td>
+      </tr>
+      <tr>
+        <td><span class="port-num">3000</span></td>
+        <td>TCP</td>
+        <td>Supabase Studio</td>
+        <td>Веб-панель управления (SQL Editor, таблицы, Storage)</td>
+        <td><span class="badge badge-orange">ВАЖНЫЙ</span></td>
+      </tr>
+      <tr>
+        <td><span class="port-num">5432</span></td>
+        <td>TCP</td>
+        <td>PostgreSQL</td>
+        <td>Прямой доступ к БД (миграция данных, бэкапы)</td>
+        <td><span class="badge badge-orange">ВАЖНЫЙ</span></td>
+      </tr>
+      <tr>
+        <td><span class="port-num">53477</span></td>
+        <td>UDP</td>
+        <td>Supabase Realtime</td>
+        <td>WebSocket-подписки в реальном времени</td>
+        <td><span class="badge badge-cyan">ОПЦИОНАЛЬНЫЙ</span></td>
+      </tr>
+      <tr>
+        <td><span class="port-num">8443</span></td>
+        <td>TCP</td>
+        <td>Kong (HTTPS)</td>
+        <td>HTTPS-вариант API Gateway</td>
+        <td><span class="badge badge-cyan">ОПЦИОНАЛЬНЫЙ</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="mermaid" style="margin-top:1.5rem">
+graph LR
+    subgraph INTERNET["Интернет / Локальная сеть"]
+        CLIENT["Клиенты<br/>Браузер + Android"]
+        ADMIN["Администратор<br/>Браузер"]
+    end
+
+    subgraph VM["Виртуальная машина"]
+        direction TB
+        FW["Файрвол<br/>ufw / iptables"]
+        KONG["Kong :8000"]
+        STUDIO["Studio :3000"]
+        PG[("PostgreSQL :5432")]
+        RT["Realtime :53477"]
+    end
+
+    CLIENT -->|"REST API"| FW
+    ADMIN -->|"Управление"| FW
+    FW -->|"8000"| KONG
+    FW -->|"3000"| STUDIO
+    FW -->|"5432"| PG
+    FW -->|"53477"| RT
+
+    classDef internet fill:#1e40af,stroke:#3b82f6,color:#fff
+    classDef vm fill:#065f46,stroke:#10b981,color:#fff
+    classDef pg fill:#7c3aed,stroke:#a855f7,color:#fff
+
+    class CLIENT,ADMIN internet
+    class FW,KONG,STUDIO,RT vm
+    class PG pg
+  </div>
+</section>
+
+<!-- ======================== СТРУКТУРА ФАЙЛОВ ======================== -->
+<section class="section" id="files">
+  <h2><span class="dot" style="background:var(--yellow)"></span> Структура файлов проекта</h2>
+  <p class="subtitle">Ключевые файлы и их назначение</p>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3><span class="badge badge-blue">ИСТОЧНИК</span> src/</h3>
+      <div class="file-tree">
+        <div class="dir">src/</div>
+        <div class="indent dir">lib/</div>
+        <div class="indent2 file-main">supabase.ts — инициализация клиента Supabase</div>
+        <div class="indent2 file-main">adminApi.ts — createUser / deleteUser / resetPassword</div>
+        <div class="indent2 file">utils.ts — утилиты (cn — объединение классов)</div>
+        <div class="indent dir">hooks/</div>
+        <div class="indent2 file-main">useAuth.ts — аутентификация, роли, signIn/signOut</div>
+        <div class="indent dir">pages/</div>
+        <div class="indent2 file">LoginPage.tsx — вход в систему</div>
+        <div class="indent2 file">DashboardPage.tsx — список цехов</div>
+        <div class="indent2 file">WorkshopPage.tsx — цех → линии</div>
+        <div class="indent2 file">LinePage.tsx — линия → запчасти</div>
+        <div class="indent2 file">PartDetailPage.tsx — детали запчасти</div>
+        <div class="indent2 file">AdminPage.tsx — управление пользователями</div>
+        <div class="indent dir">components/</div>
+        <div class="indent2 file">Layout.tsx — обёртка (Header + Sidebar + Outlet)</div>
+        <div class="indent2 file">Sidebar.tsx — навигация + версии APK</div>
+        <div class="indent2 file">PartForm.tsx — создание/редактирование запчасти</div>
+        <div class="indent2 file">PartTable.tsx — таблица запчастей (десктоп + мобайл)</div>
+        <div class="indent2 file">LineForm.tsx — создание/редактирование линии</div>
+        <div class="indent2 file">LineCard.tsx — карточка линии (инфо + фото + схемы)</div>
+        <div class="indent2 file">WorkshopForm.tsx — создание/редактирование цеха</div>
+        <div class="indent2 file">ImageViewer.tsx — просмотр фото на весь экран</div>
+        <div class="indent2 file">Breadcrumb.tsx — хлебные крошки</div>
+        <div class="indent2 file">VersionUploadModal.tsx — загрузка APK</div>
+        <div class="indent2 file">VersionUpdateBanner.tsx — уведомление об обновлении</div>
+        <div class="indent2 file">ErrorBoundary.tsx — обработка ошибок</div>
+        <div class="indent dir">types/</div>
+        <div class="indent2 file">index.ts — TypeScript-интерфейсы (Workshop, Line, Part, User, AppVersion)</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3><span class="badge badge-green">КОНФИГ</span> Корень проекта</h3>
+      <div class="file-tree">
+        <div class="dir">project/</div>
+        <div class="indent file-config">.env — VITE_SUPABASE_URL + ANON_KEY</div>
+        <div class="indent file-config">capacitor.config.json — конфигурация Android (appId: com.project.app)</div>
+        <div class="indent file-config">vite.config.ts — Vite + React + TailwindCSS + PWA + HTTPS</div>
+        <div class="indent file-config">tsconfig.json — TypeScript конфигурация</div>
+        <div class="indent file-config">package.json — зависимости (v1.0.3)</div>
+        <div class="indent file-config">.oxlintrc.json — линтер</div>
+        <div class="indent file">cert.pem / key.pem — SSL-сертификаты (для HTTPS в dev)</div>
+        <div class="indent file">index.html — точка входа SPA</div>
+        <div class="indent dir">supabase/</div>
+        <div class="indent2 dir">migrations/</div>
+        <div class="indent3 file-sql">999_full_migration.sql — полная миграция для локального Supabase</div>
+        <div class="indent3 file-sql">000_full_schema.sql — схема БД</div>
+        <div class="indent3 file-sql">000_full_storage.sql — настройка Storage</div>
+        <div class="indent3 file-sql">011_clean_migration.sql — чистая миграция</div>
+        <div class="indent3 file-sql">012_grant_permissions.sql — GRANT права</div>
+        <div class="indent3 file-sql">013_line_files.sql — добавление колонок</div>
+        <div class="indent3 file-sql">014_fix_user_creation.sql — исправление триггера</div>
+        <div class="indent3 file-sql">015_nuke_and_fix_auth.sql — сброс auth</div>
+        <div class="indent3 file-sql">016_disable_rls.sql — отключение RLS на profiles</div>
+        <div class="indent dir">dist/ — собранный билд (Vite output)</div>
+        <div class="indent dir">android/ — Capacitor Android проект</div>
+        <div class="indent dir">public/ — статические ассеты</div>
+        <div class="indent dir">resources/ — ресурсы Android</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================== ТЕХНОЛОГИИ ======================== -->
+<section class="section">
+  <h2><span class="dot" style="background:var(--cyan)"></span> Сводная таблица технологий</h2>
+  <div class="grid-3">
+    <div class="card">
+      <h3><span class="badge badge-blue">FRONTEND</span></h3>
+      <ul>
+        <li><strong>React 19</strong> — UI-библиотека</li>
+        <li><strong>TypeScript 6</strong> — типизация</li>
+        <li><strong>Vite 8</strong> — сборщик и dev-сервер</li>
+        <li><strong>TailwindCSS 4</strong> — стили</li>
+        <li><strong>react-router-dom 7</strong> — маршрутизация</li>
+        <li><strong>lucide-react</strong> — иконки</li>
+        <li><strong>PWA</strong> — offline-кэширование</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="badge badge-purple">MOBILE</span></h3>
+      <ul>
+        <li><strong>Capacitor 8</strong> — Android-обёртка</li>
+        <li><strong>Android WebView</strong> — рендеринг React</li>
+        <li><strong>HTTPS scheme</strong> — androidScheme: "https"</li>
+        <li><strong>App ID:</strong> com.project.app</li>
+        <li><strong>StatusBar</strong> — белый фон</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="badge badge-green">BACKEND</span></h3>
+      <ul>
+        <li><strong>Supabase</strong> — Backend-as-a-Service</li>
+        <li><strong>PostgreSQL</strong> — реляционная БД</li>
+        <li><strong>Kong</strong> — API Gateway</li>
+        <li><strong>PostgREST</strong> — REST → SQL</li>
+        <li><strong>GoTrue</strong> — аутентификация</li>
+        <li><strong>Storage</strong> — файловое хранилище</li>
+        <li><strong>RLS</strong> — Row Level Security</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#1e40af',
+      primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#3b82f6',
+      lineColor: '#475569',
+      secondaryColor: '#065f46',
+      tertiaryColor: '#1e293b',
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '14px',
+      edgeLabelBackground: '#1e293b',
+    },
+    flowchart: { curve: 'basis', padding: 15 },
+    er: { useMaxWidth: true },
+    sequence: { useMaxWidth: true, mirrorActors: false },
+  });
+</script>
+
+</body>
+</html>
