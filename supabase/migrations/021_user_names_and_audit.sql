@@ -1,27 +1,27 @@
 -- ====================================================================
--- Миграция 021: Имя/Фамилия пользователей и Аудит (Цех, Линия, Запчасть)
+-- Migration 021: User First/Last Names & Audit (Workshops, Lines, Parts)
 -- ====================================================================
 
--- 1. Добавление полей first_name и last_name в profiles
+-- 1. Add first_name and last_name to profiles
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS first_name TEXT NULL;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS last_name TEXT NULL;
 
--- 2. Вспомогательная функция проверки роли admin без рекурсии в RLS
+-- 2. Helper function to check admin role without RLS recursion
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
 SET search_path = public
-AS $$
+AS $body$
   SELECT EXISTS (
     SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'
   );
-$$;
+$body$;
 
 GRANT EXECUTE ON FUNCTION public.is_admin TO authenticated, anon;
 
--- 3. Функция безопасного обновления профиля пользователя только администратором
+-- 3. Function to safely update user profile (admin only)
 CREATE OR REPLACE FUNCTION public.admin_update_user(
   target_user_id UUID,
   new_first_name TEXT DEFAULT NULL,
@@ -33,7 +33,7 @@ RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $body$
 BEGIN
   IF NOT public.is_admin() THEN
     RAISE EXCEPTION 'Access denied: only administrators can edit users';
@@ -51,17 +51,17 @@ BEGIN
     UPDATE auth.users SET email = new_email WHERE id = target_user_id;
   END IF;
 END;
-$$;
+$body$;
 
 GRANT EXECUTE ON FUNCTION public.admin_update_user TO authenticated;
 
--- 4. Обновление триггера handle_new_user для сохранения first_name и last_name при регистрации
+-- 4. Trigger to handle new users from signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $body$
 BEGIN
   INSERT INTO public.profiles (id, email, role, first_name, last_name)
   VALUES (
@@ -77,9 +77,9 @@ BEGIN
     last_name = COALESCE(EXCLUDED.last_name, public.profiles.last_name);
   RETURN NEW;
 END;
-$$;
+$body$;
 
--- 5. Добавление полей аудита в workshops, lines, parts (nullable для существующих записей)
+-- 5. Add audit columns to workshops, lines, parts
 ALTER TABLE public.workshops ADD COLUMN IF NOT EXISTS created_by TEXT NULL;
 ALTER TABLE public.workshops ADD COLUMN IF NOT EXISTS updated_by TEXT NULL;
 ALTER TABLE public.workshops ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
@@ -92,13 +92,13 @@ ALTER TABLE public.parts ADD COLUMN IF NOT EXISTS created_by TEXT NULL;
 ALTER TABLE public.parts ADD COLUMN IF NOT EXISTS updated_by TEXT NULL;
 ALTER TABLE public.parts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
--- 6. Триггерная функция для автоматической записи created_by/createdAt и updated_by/updatedAt
+-- 6. Trigger to automatically record audit timestamps & users
 CREATE OR REPLACE FUNCTION public.audit_trigger_func()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $body$
 BEGIN
   IF TG_OP = 'INSERT' THEN
     IF NEW.created_by IS NULL OR NEW.created_by = '' THEN
@@ -112,7 +112,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$;
+$body$;
 
 DROP TRIGGER IF EXISTS trg_workshops_audit ON public.workshops;
 CREATE TRIGGER trg_workshops_audit
@@ -129,27 +129,29 @@ CREATE TRIGGER trg_parts_audit
   BEFORE INSERT OR UPDATE ON public.parts
   FOR EACH ROW EXECUTE FUNCTION public.audit_trigger_func();
 
--- 7. Функция извлечения информации об авторе (с fallback на email и старые записи)
+-- 7. Function to fetch user audit display info (with fallback for legacy records)
 CREATE OR REPLACE FUNCTION public.get_user_audit_info(user_ref TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $body$
 DECLARE
   rec RECORD;
+  found_id UUID;
 BEGIN
   IF user_ref IS NULL OR TRIM(user_ref) = '' THEN
     RETURN NULL;
   END IF;
 
-  -- Поиск по UUID (id профиля)
-  IF user_ref ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
+  -- 1) Try lookup by UUID (if valid UUID string)
+  BEGIN
+    found_id := user_ref::uuid;
     SELECT id, email, first_name, last_name INTO rec
     FROM public.profiles
-    WHERE id = user_ref::uuid;
-    
+    WHERE id = found_id;
+
     IF FOUND THEN
       RETURN jsonb_build_object(
         'id', rec.id,
@@ -159,9 +161,12 @@ BEGIN
         'display_name', COALESCE(NULLIF(TRIM(CONCAT_WS(' ', rec.last_name, rec.first_name)), ''), rec.email)
       );
     END IF;
-  END IF;
+  EXCEPTION WHEN OTHERS THEN
+    -- user_ref is not a valid UUID, continue to email lookup
+    NULL;
+  END;
 
-  -- Поиск по email
+  -- 2) Try lookup by email in profiles
   SELECT id, email, first_name, last_name INTO rec
   FROM public.profiles
   WHERE email = user_ref;
@@ -176,7 +181,7 @@ BEGIN
     );
   END IF;
 
-  -- Fallback для старых записей, где сохранён только email или текст
+  -- 3) Fallback for legacy text/email records where user profile does not exist
   RETURN jsonb_build_object(
     'id', NULL,
     'email', user_ref,
@@ -185,26 +190,25 @@ BEGIN
     'display_name', user_ref
   );
 END;
-$$;
+$body$;
 
 GRANT EXECUTE ON FUNCTION public.get_user_audit_info TO authenticated;
 
--- 8. Вычисляемые колонки аудита: доступны ТОЛЬКО администраторам (проверка на бэкенде)
--- Для цехов (workshops)
+-- 8. Computed columns for workshops
 CREATE OR REPLACE FUNCTION public.created_by_user(w public.workshops)
 RETURNS JSONB
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $body$
 BEGIN
   IF NOT public.is_admin() THEN
     RETURN NULL;
   END IF;
   RETURN public.get_user_audit_info(w.created_by);
 END;
-$$;
+$body$;
 
 CREATE OR REPLACE FUNCTION public.updated_by_user(w public.workshops)
 RETURNS JSONB
@@ -212,30 +216,30 @@ LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $body$
 BEGIN
   IF NOT public.is_admin() THEN
     RETURN NULL;
   END IF;
   RETURN public.get_user_audit_info(w.updated_by);
 END;
-$$;
+$body$;
 
--- Для линий (lines)
+-- 9. Computed columns for lines
 CREATE OR REPLACE FUNCTION public.created_by_user(l public.lines)
 RETURNS JSONB
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $body$
 BEGIN
   IF NOT public.is_admin() THEN
     RETURN NULL;
   END IF;
   RETURN public.get_user_audit_info(l.created_by);
 END;
-$$;
+$body$;
 
 CREATE OR REPLACE FUNCTION public.updated_by_user(l public.lines)
 RETURNS JSONB
@@ -243,30 +247,30 @@ LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $body$
 BEGIN
   IF NOT public.is_admin() THEN
     RETURN NULL;
   END IF;
   RETURN public.get_user_audit_info(l.updated_by);
 END;
-$$;
+$body$;
 
--- Для запчастей (parts)
+-- 10. Computed columns for parts
 CREATE OR REPLACE FUNCTION public.created_by_user(p public.parts)
 RETURNS JSONB
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $body$
 BEGIN
   IF NOT public.is_admin() THEN
     RETURN NULL;
   END IF;
   RETURN public.get_user_audit_info(p.created_by);
 END;
-$$;
+$body$;
 
 CREATE OR REPLACE FUNCTION public.updated_by_user(p public.parts)
 RETURNS JSONB
@@ -274,14 +278,14 @@ LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $body$
 BEGIN
   IF NOT public.is_admin() THEN
     RETURN NULL;
   END IF;
   RETURN public.get_user_audit_info(p.updated_by);
 END;
-$$;
+$body$;
 
 GRANT EXECUTE ON FUNCTION public.created_by_user(public.workshops) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.updated_by_user(public.workshops) TO authenticated;
