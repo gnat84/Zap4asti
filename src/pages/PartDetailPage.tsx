@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { usePart, useUpdatePart } from '@/hooks/useParts'
+import { useParams, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/hooks/useAuth'
+import { usePart, useUpdatePart, useDeletePart } from '@/hooks/useParts'
 import { useLine } from '@/hooks/useLines'
 import { useWorkshop } from '@/hooks/useWorkshops'
 import { resolvePhotoUrls, resolveFileUrls, firstUrl } from '@/lib/utils'
@@ -14,6 +15,9 @@ import { useBackButtonHandler } from '@/hooks/useBackButton'
 
 export function PartDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const { isAdmin } = useAuth()
+  const deletePart = useDeletePart()
   const [viewImage, setViewImage] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
 
@@ -24,6 +28,17 @@ export function PartDetailPage() {
   const { data: line } = useLine(part?.line_id)
   const { data: workshop } = useWorkshop(line?.workshop_id)
   const updatePart = useUpdatePart()
+
+  const handleDelete = () => {
+    if (!part) return
+    if (!confirm(`Удалить запчасть «${part.name}»?`)) return
+    deletePart.mutate(
+      { id: part.id, lineId: part.line_id },
+      {
+        onSuccess: () => navigate(`/line/${part.line_id}`),
+      }
+    )
+  }
 
   const handleDeletePhoto = (url: string) => {
     if (!part) return
@@ -63,13 +78,24 @@ export function PartDetailPage() {
       <div className="max-w-2xl">
         <div className="flex items-center justify-between gap-3 mb-5">
           <h2 className="text-xl md:text-2xl font-bold truncate">{part.name}</h2>
-          <button
-            onClick={() => setEditing(true)}
-            className="flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm shrink-0"
-          >
-            <Pencil className="w-4 h-4" />
-            <span className="hidden sm:inline">Редактировать</span>
-          </button>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={() => setEditing(true)}
+              className="flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+            >
+              <Pencil className="w-4 h-4" />
+              <span className="hidden sm:inline">Редактировать</span>
+            </button>
+            {isAdmin && (
+              <button
+                onClick={handleDelete}
+                className="flex items-center gap-1.5 px-3 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 text-sm"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Удалить</span>
+              </button>
+            )}
+          </div>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-5 md:p-6 space-y-4">
           {photos.length > 0 ? (
