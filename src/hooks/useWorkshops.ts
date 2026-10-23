@@ -14,7 +14,15 @@ export function useWorkshops() {
         .from('workshops')
         .select('*, created_by_user, updated_by_user')
         .order('name')
-      if (error) throw error
+      if (error) {
+        // Fallback to basic select if computed columns are not available yet
+        const fallback = await supabase
+          .from('workshops')
+          .select('*')
+          .order('name')
+        if (fallback.error) throw fallback.error
+        return fallback.data as Workshop[]
+      }
       return data as Workshop[]
     },
   })
@@ -30,7 +38,15 @@ export function useWorkshop(id: string | undefined) {
         .select('*, created_by_user, updated_by_user')
         .eq('id', id)
         .single()
-      if (error) throw error
+      if (error) {
+        const fallback = await supabase
+          .from('workshops')
+          .select('*')
+          .eq('id', id)
+          .single()
+        if (fallback.error) throw fallback.error
+        return fallback.data as Workshop
+      }
       return data as Workshop
     },
     enabled: !!id,
@@ -52,7 +68,7 @@ export function useCreateWorkshop() {
       const { data, error } = await supabase
         .from('workshops')
         .insert(insertData)
-        .select('*, created_by_user, updated_by_user')
+        .select()
         .single()
       if (error) throw error
       return data

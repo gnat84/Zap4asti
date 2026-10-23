@@ -20,7 +20,15 @@ export function useParts(lineId: string | undefined) {
         .select('*, created_by_user, updated_by_user')
         .eq('line_id', lineId)
         .order('name')
-      if (error) throw error
+      if (error) {
+        const fallback = await supabase
+          .from('parts')
+          .select('*')
+          .eq('line_id', lineId)
+          .order('name')
+        if (fallback.error) throw fallback.error
+        return fallback.data as Part[]
+      }
       return data as Part[]
     },
     enabled: !!lineId,
@@ -37,7 +45,15 @@ export function usePart(id: string | undefined) {
         .select('*, created_by_user, updated_by_user')
         .eq('id', id)
         .single()
-      if (error) throw error
+      if (error) {
+        const fallback = await supabase
+          .from('parts')
+          .select('*')
+          .eq('id', id)
+          .single()
+        if (fallback.error) throw fallback.error
+        return fallback.data as Part
+      }
       return data as Part
     },
     enabled: !!id,
@@ -57,7 +73,7 @@ export function useCreatePart() {
       const { data, error } = await supabase
         .from('parts')
         .insert(insertData)
-        .select('*, created_by_user, updated_by_user')
+        .select()
         .single()
       if (error) throw error
       return data

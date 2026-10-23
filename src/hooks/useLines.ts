@@ -20,7 +20,15 @@ export function useLines(workshopId: string | undefined) {
         .select('*, created_by_user, updated_by_user')
         .eq('workshop_id', workshopId)
         .order('name')
-      if (error) throw error
+      if (error) {
+        const fallback = await supabase
+          .from('lines')
+          .select('*')
+          .eq('workshop_id', workshopId)
+          .order('name')
+        if (fallback.error) throw fallback.error
+        return fallback.data as Line[]
+      }
       return data as Line[]
     },
     enabled: !!workshopId,
@@ -37,7 +45,15 @@ export function useLine(id: string | undefined) {
         .select('*, created_by_user, updated_by_user')
         .eq('id', id)
         .single()
-      if (error) throw error
+      if (error) {
+        const fallback = await supabase
+          .from('lines')
+          .select('*')
+          .eq('id', id)
+          .single()
+        if (fallback.error) throw fallback.error
+        return fallback.data as Line
+      }
       return data as Line
     },
     enabled: !!id,
@@ -57,7 +73,7 @@ export function useCreateLine() {
       const { data, error } = await supabase
         .from('lines')
         .insert(insertData)
-        .select('*, created_by_user, updated_by_user')
+        .select()
         .single()
       if (error) throw error
       return data
