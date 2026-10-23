@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useAuth } from '@/hooks/useAuth'
 import { usePart, useUpdatePart } from '@/hooks/useParts'
 import { useLine } from '@/hooks/useLines'
 import { useWorkshop } from '@/hooks/useWorkshops'
-import { resolvePhotoUrls, resolveFileUrls, firstUrl, formatDateTime } from '@/lib/utils'
+import { resolvePhotoUrls, resolveFileUrls, firstUrl } from '@/lib/utils'
 import { Breadcrumb } from '@/components/Breadcrumb'
 import { ImageViewer } from '@/components/ImageViewer'
 import { CachedImg } from '@/components/CachedImg'
 import { PartForm } from '@/components/PartForm'
+import { AuditBlock } from '@/components/AuditBlock'
 import { FileText, ExternalLink, Package, Pencil, Trash2, X } from 'lucide-react'
 import { useBackButtonHandler } from '@/hooks/useBackButton'
 
@@ -16,7 +16,6 @@ export function PartDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [viewImage, setViewImage] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
-  const { isAdmin } = useAuth()
 
   useBackButtonHandler(Boolean(viewImage), () => setViewImage(null))
   useBackButtonHandler(editing, () => setEditing(false))
@@ -183,17 +182,14 @@ export function PartDetailPage() {
             </div>
           )}
 
-          {isAdmin && (
-            <div className="border-t border-gray-200 pt-4 mt-4 space-y-2">
-              <div className="flex flex-col sm:flex-row sm:gap-4 gap-1 text-sm text-gray-500">
-                <span>Создатель: {part.created_by || '—'}</span>
-                <span>Редактор: {part.updated_by || '—'}</span>
-              </div>
-              <div className="text-sm text-gray-400">
-                Создано: {formatDateTime(part.created_at)}
-              </div>
-            </div>
-          )}
+          <AuditBlock
+            createdBy={part.created_by}
+            createdAt={part.created_at}
+            createdByUser={part.created_by_user}
+            updatedBy={part.updated_by}
+            updatedAt={part.updated_at}
+            updatedByUser={part.updated_by_user}
+          />
         </div>
       </div>
 

@@ -1,11 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { createUser, deleteUser, resetPassword } from '@/lib/adminApi'
+import { createUser, updateUser, deleteUser, resetPassword } from '@/lib/adminApi'
 
 export interface ProfileUser {
   id: string
   email: string
   role: string
+  first_name?: string | null
+  last_name?: string | null
   created_at: string
 }
 
@@ -31,8 +33,42 @@ export function useCreateUser() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ email, password }: { email: string; password: string }) => {
-      return createUser(email, password)
+    mutationFn: async ({
+      email,
+      password,
+      firstName,
+      lastName,
+      role,
+    }: {
+      email: string
+      password: string
+      firstName?: string | null
+      lastName?: string | null
+      role?: string
+    }) => {
+      return createUser(email, password, { firstName, lastName, role })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.all })
+    },
+  })
+}
+
+export function useUpdateUser() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      ...data
+    }: {
+      userId: string
+      firstName?: string | null
+      lastName?: string | null
+      email?: string | null
+      role?: string | null
+    }) => {
+      return updateUser(userId, data)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.all })

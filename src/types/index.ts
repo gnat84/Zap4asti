@@ -1,7 +1,20 @@
+export interface UserAuditInfo {
+  id: string | null
+  email: string
+  first_name?: string | null
+  last_name?: string | null
+  display_name: string
+}
+
 export interface Workshop {
   id: string
   name: string
   created_at: string
+  updated_at?: string | null
+  created_by?: string | null
+  updated_by?: string | null
+  created_by_user?: UserAuditInfo | null
+  updated_by_user?: UserAuditInfo | null
 }
 
 export interface Line {
@@ -24,6 +37,8 @@ export interface Line {
   updated_by: string | null
   created_at: string
   updated_at: string
+  created_by_user?: UserAuditInfo | null
+  updated_by_user?: UserAuditInfo | null
 }
 
 export interface Part {
@@ -45,6 +60,8 @@ export interface Part {
   updated_by: string | null
   created_at: string
   updated_at: string
+  created_by_user?: UserAuditInfo | null
+  updated_by_user?: UserAuditInfo | null
 }
 
 export interface Fault {
@@ -68,6 +85,8 @@ export interface User {
   id: string
   email: string
   role: UserRole
+  first_name?: string | null
+  last_name?: string | null
 }
 
 export interface AppVersion {

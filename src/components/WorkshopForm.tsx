@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAuth } from '@/hooks/useAuth'
 import { useCreateWorkshop, useUpdateWorkshop } from '@/hooks/useWorkshops'
 import { X } from 'lucide-react'
 
@@ -8,6 +9,7 @@ interface WorkshopFormProps {
 }
 
 export function WorkshopForm({ onClose, initialData }: WorkshopFormProps) {
+  const { user } = useAuth()
   const [name, setName] = useState(initialData?.name ?? '')
   const [error, setError] = useState('')
   const createWorkshop = useCreateWorkshop()
@@ -19,17 +21,20 @@ export function WorkshopForm({ onClose, initialData }: WorkshopFormProps) {
 
     if (initialData) {
       updateWorkshop.mutate(
-        { id: initialData.id, name },
+        { id: initialData.id, name, updatedBy: user?.id || null },
         {
           onSuccess: () => onClose(),
           onError: (e) => setError(e.message),
         }
       )
     } else {
-      createWorkshop.mutate(name, {
-        onSuccess: () => onClose(),
-        onError: (e) => setError(e.message),
-      })
+      createWorkshop.mutate(
+        { name, createdBy: user?.id || null },
+        {
+          onSuccess: () => onClose(),
+          onError: (e) => setError(e.message),
+        }
+      )
     }
   }
 

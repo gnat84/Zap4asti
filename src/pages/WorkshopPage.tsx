@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { Breadcrumb } from '@/components/Breadcrumb'
 import { LineForm } from '@/components/LineForm'
 import { WorkshopForm } from '@/components/WorkshopForm'
+import { AuditBlock } from '@/components/AuditBlock'
 import { Plus, ArrowRight, Inbox, Trash2, Pencil } from 'lucide-react'
 import { useBackButtonHandler } from '@/hooks/useBackButton'
 
@@ -97,6 +98,29 @@ export function WorkshopPage() {
           </button>
         </div>
       </div>
+
+      {workshop && (
+        <div className="bg-white border border-gray-200 rounded-xl p-5 md:p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-gray-500 mb-1">Цех</h3>
+              <p className="text-lg font-semibold">{workshop.name}</p>
+            </div>
+            <div className="text-sm text-gray-500">
+              Линий: <span className="font-semibold text-gray-800">{lines.length}</span>
+            </div>
+          </div>
+          <AuditBlock
+            createdBy={workshop.created_by}
+            createdAt={workshop.created_at}
+            createdByUser={workshop.created_by_user}
+            updatedBy={workshop.updated_by}
+            updatedAt={workshop.updated_at}
+            updatedByUser={workshop.updated_by_user}
+          />
+        </div>
+      )}
+
       {lines.length === 0 ? (
         <div className="text-center py-16">
           <Inbox className="w-16 h-16 text-gray-300 mx-auto mb-4" />

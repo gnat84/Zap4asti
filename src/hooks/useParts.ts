@@ -17,7 +17,7 @@ export function useParts(lineId: string | undefined) {
       if (!lineId) return []
       const { data, error } = await supabase
         .from('parts')
-        .select('*')
+        .select('*, created_by_user, updated_by_user')
         .eq('line_id', lineId)
         .order('name')
       if (error) throw error
@@ -34,7 +34,7 @@ export function usePart(id: string | undefined) {
       if (!id) return null
       const { data, error } = await supabase
         .from('parts')
-        .select('*')
+        .select('*, created_by_user, updated_by_user')
         .eq('id', id)
         .single()
       if (error) throw error
@@ -48,11 +48,16 @@ export function useCreatePart() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (part: Omit<Part, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (part: Omit<Part, 'id' | 'created_at' | 'updated_at' | 'created_by_user' | 'updated_by_user'>) => {
+      const { data: { user } } = await supabase.auth.getUser()
+      const insertData = {
+        ...part,
+        created_by: part.created_by || user?.id || null,
+      }
       const { data, error } = await supabase
         .from('parts')
-        .insert(part)
-        .select()
+        .insert(insertData)
+        .select('*, created_by_user, updated_by_user')
         .single()
       if (error) throw error
       return data
@@ -68,9 +73,25 @@ export function useUpdatePart() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Part> & { id: string }) => {
+      const { data: { user } } = await supabase.auth.getUser()
+      // Remove fields that should not be overwritten on update
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { created_by, created_at, created_by_user, updated_by_user, ...cleanUpdates } = updates as Partial<Part> & {
+        created_by?: string | null
+        created_at?: string
+        created_by_user?: unknown
+        updated_by_user?: unknown
+      }
+
+      const updateData = {
+        ...cleanUpdates,
+        updated_by: updates.updated_by || user?.id || null,
+        updated_at: new Date().toISOString(),
+      }
+
       const { error } = await supabase
         .from('parts')
-        .update(updates)
+        .update(updateData)
         .eq('id', id)
       if (error) throw error
     },

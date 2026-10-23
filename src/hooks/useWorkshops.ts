@@ -12,7 +12,7 @@ export function useWorkshops() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('workshops')
-        .select('*')
+        .select('*, created_by_user, updated_by_user')
         .order('name')
       if (error) throw error
       return data as Workshop[]
@@ -27,7 +27,7 @@ export function useWorkshop(id: string | undefined) {
       if (!id) return null
       const { data, error } = await supabase
         .from('workshops')
-        .select('*')
+        .select('*, created_by_user, updated_by_user')
         .eq('id', id)
         .single()
       if (error) throw error
@@ -41,11 +41,18 @@ export function useCreateWorkshop() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (name: string) => {
+    mutationFn: async (payload: string | { name: string; createdBy?: string | null }) => {
+      const name = typeof payload === 'string' ? payload : payload.name
+      const createdBy = typeof payload === 'string' ? undefined : payload.createdBy
+      const { data: { user } } = await supabase.auth.getUser()
+      const insertData: Record<string, unknown> = {
+        name,
+        created_by: createdBy || user?.id || null,
+      }
       const { data, error } = await supabase
         .from('workshops')
-        .insert({ name })
-        .select()
+        .insert(insertData)
+        .select('*, created_by_user, updated_by_user')
         .single()
       if (error) throw error
       return data
@@ -60,10 +67,15 @@ export function useUpdateWorkshop() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+    mutationFn: async ({ id, name, updatedBy }: { id: string; name: string; updatedBy?: string | null }) => {
+      const { data: { user } } = await supabase.auth.getUser()
       const { error } = await supabase
         .from('workshops')
-        .update({ name })
+        .update({
+          name,
+          updated_by: updatedBy || user?.id || null,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', id)
       if (error) throw error
     },

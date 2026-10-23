@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ImageViewer } from './ImageViewer'
 import { CachedImg } from './CachedImg'
+import { AuditBlock } from './AuditBlock'
 import { useBackButtonHandler } from '@/hooks/useBackButton'
 import { resolvePhotoUrls, resolveFileUrls, resolvePanelPhotoUrls } from '@/lib/utils'
 import { FileText, ChevronDown, ChevronUp } from 'lucide-react'
@@ -154,6 +155,15 @@ export function LineCard({ line }: LineCardProps) {
             </div>
           </div>
         )}
+
+        <AuditBlock
+          createdBy={line.created_by}
+          createdAt={line.created_at}
+          createdByUser={line.created_by_user}
+          updatedBy={line.updated_by}
+          updatedAt={line.updated_at}
+          updatedByUser={line.updated_by_user}
+        />
       </div>
 
       {viewImage && (

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAuth } from '@/hooks/useAuth'
 import { useCreateLine, useUpdateLine } from '@/hooks/useLines'
 import { uploadToStorage } from '@/lib/storage'
 import { resolveFileUrls, resolvePanelPhotoUrls, firstUrl } from '@/lib/utils'
@@ -60,6 +61,8 @@ export function LineForm({ workshopId, onClose, initialData }: LineFormProps) {
     }
   }
 
+  const { user } = useAuth()
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -79,20 +82,18 @@ export function LineForm({ workshopId, onClose, initialData }: LineFormProps) {
       panel_photo_urls: panelPhotoUrls.length > 0 ? panelPhotoUrls : null,
       credentials_enabled: credentialsEnabled,
       credentials: credentials.length > 0 ? credentials : null,
-      created_by: null,
-      updated_by: null,
     }
 
     if (initialData) {
       updateLine.mutate(
-        { id: initialData.id, ...payload },
+        { id: initialData.id, ...payload, updated_by: user?.id || null },
         { onSuccess: () => onClose(), onError: (e) => setError(e.message) }
       )
     } else {
-      createLine.mutate(payload, {
-        onSuccess: () => onClose(),
-        onError: (e) => setError(e.message),
-      })
+      createLine.mutate(
+        { ...payload, created_by: user?.id || null, updated_by: null },
+        { onSuccess: () => onClose(), onError: (e) => setError(e.message) }
+      )
     }
   }
 

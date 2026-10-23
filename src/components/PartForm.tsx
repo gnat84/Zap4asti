@@ -140,7 +140,7 @@ export function PartForm({ workshopId, lineId, onClose, initialData }: PartFormP
     e.preventDefault()
     setError('')
 
-    const payload = {
+    const basePayload = {
       name,
       description: description || null,
       photo_url: firstUrl(photoUrls),
@@ -154,24 +154,24 @@ export function PartForm({ workshopId, lineId, onClose, initialData }: PartFormP
       scheme_name: schemeName || null,
       workshop_id: workshopId,
       line_id: lineId,
-      updated_at: new Date().toISOString(),
-      created_by: user?.email || null,
-      updated_by: user?.email || null,
     }
 
     if (initialData) {
       updatePart.mutate(
-        { id: initialData.id, ...payload },
+        { id: initialData.id, ...basePayload, updated_by: user?.id || null },
         {
           onSuccess: () => onClose(),
           onError: (e) => setError(e.message),
         }
       )
     } else {
-      createPart.mutate(payload, {
-        onSuccess: () => onClose(),
-        onError: (e) => setError(e.message),
-      })
+      createPart.mutate(
+        { ...basePayload, created_by: user?.id || null, updated_by: null },
+        {
+          onSuccess: () => onClose(),
+          onError: (e) => setError(e.message),
+        }
+      )
     }
   }
 

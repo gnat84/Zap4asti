@@ -30,16 +30,23 @@ function getStoredUser(): User | null {
   return null
 }
 
-// Запрос роли пользователя с таймаутом и кэшированием — никогда не падает
-async function fetchUserRole(userId: string): Promise<'admin' | 'user'> {
+// Запрос профиля пользователя с таймаутом и кэшированием — никогда не падает
+interface CachedProfile {
+  role: 'admin' | 'user'
+  first_name?: string | null
+  last_name?: string | null
+}
+
+async function fetchUserProfile(userId: string): Promise<CachedProfile> {
   const cachedRole = (localStorage.getItem(`profile_role_${userId}`) as 'admin' | 'user') || 'user'
+  const defaultProfile: CachedProfile = { role: cachedRole }
   try {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), 4000)
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, first_name, last_name')
       .eq('id', userId)
       .abortSignal(controller.signal)
       .single()
@@ -47,7 +54,7 @@ async function fetchUserRole(userId: string): Promise<'admin' | 'user'> {
     clearTimeout(timer)
 
     if (error) {
-      return cachedRole
+      return defaultProfile
     }
 
     const role: 'admin' | 'user' = data?.role === 'admin' ? 'admin' : 'user'
@@ -56,18 +63,24 @@ async function fetchUserRole(userId: string): Promise<'admin' | 'user'> {
     } catch {
       // ignore storage errors
     }
-    return role
+    return {
+      role,
+      first_name: data?.first_name ?? null,
+      last_name: data?.last_name ?? null,
+    }
   } catch {
-    return cachedRole
+    return defaultProfile
   }
 }
 
 async function buildUser(sessionUser: { id: string; email?: string }): Promise<User> {
-  const role = await fetchUserRole(sessionUser.id)
+  const profile = await fetchUserProfile(sessionUser.id)
   return {
     id: sessionUser.id,
     email: sessionUser.email ?? '',
-    role,
+    role: profile.role,
+    first_name: profile.first_name,
+    last_name: profile.last_name,
   }
 }
 
